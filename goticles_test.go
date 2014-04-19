@@ -21,14 +21,15 @@ func mkSpace() Space {
 	}
 }
 
-func TestSpace(t *testing.T) {
+func BenchmarkSpace(b *testing.B) {
 	space := mkSpace()
 	particle := &space.particles[0]
 	particle.ApplyImpulse(Vect{1, 0})
 	step := 1.0/60
-	for i := 0.0; i < 1.01; i += step {
-		t.Logf("t: %.4f, p: %v", i, particle)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
 		space.Integrate(step)
 	}
+	b.Logf("t: %.4f; p: %v", space.time, particle)
 }
 
