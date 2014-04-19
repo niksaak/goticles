@@ -48,34 +48,6 @@ type state struct {
 	velocity Vect
 }
 
-/*
-type derivative state
-
-type Particle struct {
-	s state
-	d derivative
-}
-
-func evaluate(
-	initial state,
-	t, dt float64,
-	d derivative,
-	accel func(s state, t float64),
-) derivative {
-	if accel == nil {
-		panic("No accel func")
-	}
-	var s state
-	s.position = initial.position.Add(d.position.Mul(dt))
-	s.velocity = initial.velocity.Add(d.velocity.Mul(dt))
-
-	var ret derivative
-	ret.position = state.velocity
-	ret.velocity = accel(s, t+dt)
-	return ret
-}
-*/
-
 type State struct {
 	position    Vect
 	momentum    Vect
