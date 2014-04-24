@@ -16,22 +16,26 @@ import (
 	"time"
 )
 
-const PARTICLE_COUNT = 512
+const (
+	PARTICLE_COUNT = 1024
+	PARTICLE_MASS = 512
+)
 
 func randFloat05() float64 {
 	return rand.Float64() - 0.5
 }
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
 	space := MkSpace()
-	space.AddParticle(1.0/1024)
+	space.AddParticle(1.0/(PARTICLE_MASS/2))
 	for i := 0; i < PARTICLE_COUNT; i++ {
-		particle := space.AddParticle(1.0/2048)
+		particle := space.AddParticle(1.0/PARTICLE_MASS)
 		x := randFloat05() * 2
 		y := randFloat05() * 2
 		particle.SetPosition(vect.V{x, y})
-		px := randFloat05() / 10
-		py := randFloat05() / 10
+		px := randFloat05() / 5
+		py := randFloat05() / 5
 		particle.ApplyImpulse(vect.V{px, py})
 	}
 	screen, err := MkScreen(512, 512, "GO TICKLES")
@@ -74,6 +78,7 @@ func SimulateOnScreen(s *Space, dt, frameDt float64, screen *Screen) {
 		screen.font.Printf(10, 30, "%v", s.Particle(0).Velocity())
 		gl.VertexPointer(2, gl.DOUBLE, 0, points)
 		gl.DrawArrays(gl.POINTS, 0, len(points))
+
 		screen.window.SwapBuffers()
 		glfw3.PollEvents()
 	}

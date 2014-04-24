@@ -10,7 +10,7 @@ type V struct{ X, Y float64 }
 
 // Eql returns true when vectors v and a are equal.
 func (v V) Eql(a V) bool {
-	return v.X == a.X && v.Y == a.Y
+	return v == a
 }
 
 // Add a to v.

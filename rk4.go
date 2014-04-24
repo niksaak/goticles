@@ -70,7 +70,7 @@ type Derivative struct {
 	force    vect.V
 }
 
-func evaluate(initial State, t, dt float64, d Derivative) Derivative {
+func evaluate(initial *State, t, dt float64, d Derivative) Derivative {
 	var s State
 	s.position = initial.position.Add(d.momentum.Mul(dt))
 	s.momentum = initial.momentum.Add(d.force.Mul(dt))
@@ -82,10 +82,10 @@ func evaluate(initial State, t, dt float64, d Derivative) Derivative {
 }
 
 func integrate(s *State, t, dt float64) {
-	a := evaluate(*s, t, 0, Derivative{})
-	b := evaluate(*s, t, dt/2, a)
-	c := evaluate(*s, t, dt/2, b)
-	d := evaluate(*s, t, dt, c)
+	a := evaluate(s, t, 0, Derivative{})
+	b := evaluate(s, t, dt/2, a)
+	c := evaluate(s, t, dt/2, b)
+	d := evaluate(s, t, dt, c)
 
 	dMomentum := a.momentum.Add(b.momentum.Add(c.momentum).Mul(2).Add(d.momentum)).Mul(1.0 / 6)
 	dForce := a.force.Add(b.force.Add(c.force).Mul(2).Add(d.force)).Mul(1.0 / 6)
