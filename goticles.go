@@ -73,24 +73,6 @@ func (s *Space) applyForce(dt float64) {
 			pt2.force.Y += dy * pt1.mass * mag
 		}
 	}
-	/*
-	for i := range s.particles {
-		pt1 := &s.particles[i]
-		//for j := range s.particles[i+1:len(s.particles)-1] {
-		for j := i + 1; j < len(s.particles); j++ {
-			pt2 := &s.particles[j]
-
-			dV := pt1.position.Sub(pt2.position)
-
-			dSquared := dV.Dot(dV)
-			distance := math.Sqrt(dSquared)
-			mag := dSquared * distance
-
-			pt1.force = pt1.force.Sub(dV.Mul(pt2.mass * mag))
-			pt2.force = pt2.force.Add(dV.Mul(pt1.mass * mag))
-		}
-	}
-	*/
 }
 
 func (s *Space) Integrate(dt float64) {
