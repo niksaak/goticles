@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	PARTICLE_COUNT = 1024
-	PARTICLE_MASS = 512
+	PARTICLE_COUNT = 4096
+	PARTICLE_MASS_RATIO = 4096
 )
 
 func randFloat05() float64 {
@@ -28,9 +28,8 @@ func randFloat05() float64 {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 	space := MkSpace()
-	space.AddParticle(1.0/(PARTICLE_MASS/2))
 	for i := 0; i < PARTICLE_COUNT; i++ {
-		particle := space.AddParticle(1.0/PARTICLE_MASS)
+		particle := space.AddParticle(1.0/PARTICLE_MASS_RATIO)
 		x := randFloat05() * 2
 		y := randFloat05() * 2
 		particle.SetPosition(vect.V{x, y})
