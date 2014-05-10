@@ -63,3 +63,10 @@ func (v V) LenSq() float64 {
 	return v.Dot(v)
 }
 
+func Angle(a float64) V {
+	return V{
+		X: math.Cos(a),
+		Y: math.Sin(a),
+	}
+}
+

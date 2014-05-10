@@ -18,7 +18,7 @@ import (
 
 const (
 	PARTICLE_COUNT = 4096
-	PARTICLE_MASS_RATIO = 4096
+	PARTICLE_MASS  = 1.0/2048
 )
 
 func randFloat05() float64 {
@@ -29,57 +29,56 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 	space := MkSpace()
 	for i := 0; i < PARTICLE_COUNT; i++ {
-		particle := space.AddParticle(1.0/PARTICLE_MASS_RATIO)
-		x := randFloat05() * 2
-		y := randFloat05() * 2
-		particle.SetPosition(vect.V{x, y})
-		px := randFloat05() / 5
-		py := randFloat05() / 5
-		particle.ApplyImpulse(vect.V{px, py})
+		particle := space.MkParticle(PARTICLE_MASS)
+		r := rand.Float64()
+		th := 2 * math.Pi * rand.Float64()
+		particle.SetPosition(vect.Angle(th).Mul(r))
+		px := randFloat05() * PARTICLE_MASS
+		py := randFloat05() * PARTICLE_MASS
+		particle.Momentum = particle.Momentum.Add(vect.V{px, py})
+		particle.Recalculate()
 	}
 	screen, err := MkScreen(512, 512, "GO TICKLES")
 	if err != nil {
 		panic(err)
 	}
-	SimulateOnScreen(space, 1.0/60, 1.0/60, screen)
+	SimulateOnScreenFixed(space, 1.0/60, screen)
 }
 
-func SimulateOnScreen(s *Space, dt, frameDt float64, screen *Screen) {
+func SimulateOnScreenFixed(s *Space, step float64, screen *Screen) {
+	const (
+		STEPPING_MULTIPLIER = 1.0/2
+	)
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
 	screen.window.MakeContextCurrent()
 
-	timeNow := time.Now()
-	accumulator := 0.0
+	points := make([]vect.V, len(s.Particles))
 
-	points := make([]vect.V, s.ParticleCount())
-	log.Println(s.ParticleCount(), len(points))
+	tick := time.Tick(time.Duration(step * float64(time.Second)))
+	debug := time.Tick(1 * time.Second)
+
+	var fps int
 
 	for !screen.window.ShouldClose() {
-		newTime := time.Now()
-		frameTime := newTime.Sub(timeNow)
-		timeNow = newTime
+		select {
+		case <-tick:
+			s.Step(step * STEPPING_MULTIPLIER)
+			for i := range points {
+				points[i] = s.Particles[i].Position
+			}
+			gl.Clear(gl.COLOR_BUFFER_BIT)
+			gl.VertexPointer(2, gl.DOUBLE, 0, points)
+			gl.DrawArrays(gl.POINTS, 0, len(points))
 
-		accumulator += math.Min(frameTime.Seconds(), frameDt)
-
-		for accumulator >= dt {
-			s.Integrate(dt)
-			accumulator -= dt
+			screen.window.SwapBuffers()
+			glfw3.PollEvents()
+			fps++
+		case <-debug:
+			log.Printf("fps: %d, %v", fps, s.Particle(0))
+			fps = 0
 		}
-
-		for i := 0; i < s.ParticleCount(); i++ {
-			points[i] = s.Particle(i).Position()
-		}
-		gl.Clear(gl.COLOR_BUFFER_BIT)
-		gl.Color4d(1, 1, 1, 1)
-		screen.font.Printf(10, 10, "%v", s.Particle(0))
-		screen.font.Printf(10, 30, "%v", s.Particle(0).Velocity())
-		gl.VertexPointer(2, gl.DOUBLE, 0, points)
-		gl.DrawArrays(gl.POINTS, 0, len(points))
-
-		screen.window.SwapBuffers()
-		glfw3.PollEvents()
 	}
 }
 
@@ -126,7 +125,7 @@ func setupGFX(width, height int, title string) (*glfw3.Window, error) {
 		gl.MatrixMode(gl.MODELVIEW)
 	})
 	window.SetCloseCallback(func(window *glfw3.Window) {
-		log.Println("closing window...")
+		log.Println("closing window")
 	})
 
 	// Setup OpenGL
