@@ -1,103 +1,166 @@
 package goticles
 
 import (
+	"github.com/niksaak/goticles/vect"
 	"fmt"
 	"math"
 )
 
 type Particle struct {
-	id int
-	State
+	Id          int
+	Position    vect.V
+	dPosition   [4]vect.V
+	Momentum    vect.V
+	dMomentum   [4]vect.V
+	velocity    vect.V
+	dvelocity   [4]vect.V
+	Force       vect.V
+	dForce      [4]vect.V
+	Mass        float64
+	massInverse float64
+}
+
+func (p *Particle) SetPosition(pos vect.V) {
+	p.Position = pos
+	p.Recalculate()
+}
+
+func (p *Particle) SetMomentum(momentum vect.V) {
+	p.Momentum = momentum
+	p.Recalculate()
+}
+
+func (p *Particle) SetForce(force vect.V) {
+	p.Force = force
+}
+
+func (p *Particle) SetMass(mass float64) {
+	p.Mass = mass
+	p.massInverse = 1 / mass
+}
+
+func (p Particle) Velocity() vect.V {
+	return p.velocity
 }
 
 func (p *Particle) String() string {
 	return fmt.Sprintf(
-		"#%d @(% 4.4f, % 4.4f) V(% 4.4f, % 4.4f) ->(% 4.4f, % 4.4f) "+
-		" M = % 2f(% 2f)",
-		p.id,
-		p.position.X,
-		p.position.Y,
-		p.velocity.X,
-		p.velocity.Y,
-		p.momentum.X,
-		p.momentum.Y,
-		p.mass,
-		p.massInverse,
-	)
+		"#%4d; X(%2.4f, %2.4f); P(%2.4f, %2.4f); V(%2.4f, %2.4f)",
+		p.Id,
+		p.Position.X, p.Position.Y,
+		p.Momentum.X, p.Momentum.Y,
+		p.velocity.X, p.velocity.Y)
+}
+
+func (p *Particle) Recalculate() {
+	p.velocity.X = p.Momentum.X * p.massInverse
+	p.velocity.Y = p.Momentum.Y * p.massInverse
+}
+
+func (p *Particle) dRecalculate(k int) {
+	p.dvelocity[k].X = p.dMomentum[k].X * p.massInverse
+	p.dvelocity[k].Y = p.dMomentum[k].Y * p.massInverse
 }
 
 type Space struct {
 	time float64
-	particles []Particle
+	Particles []Particle
 }
 
 func MkSpace() *Space {
-	space := new(Space)
-	return space
+	return new(Space)
 }
 
 func (s *Space) Particle(id int) *Particle {
-	return &s.particles[id]
+	return &s.Particles[id]
 }
 
-func (s *Space) AddParticle(mass float64) *Particle {
-	s.particles = append(s.particles, Particle{})
-	particle := &s.particles[len(s.particles)-1]
-	particle.id = len(s.particles)
-	particle.SetMass(mass)
-	particle.recalculate()
-	return particle
+func (s *Space) MkParticle(mass float64) *Particle {
+	id := len(s.Particles)
+	p := Particle{Id: id}
+	p.SetMass(mass)
+	s.Particles = append(s.Particles, p)
+	return &s.Particles[id]
 }
 
-func (s *Space) ParticleCount() int {
-	return len(s.particles)
+func (s *Space) Step(dt float64) {
+	evaluate(s.Particles, 0, 0)
+	evaluate(s.Particles, dt/2, 1)
+	evaluate(s.Particles, dt/2, 2)
+	evaluate(s.Particles, dt, 3)
+	updateParameters(s.Particles)
+	s.time += dt
 }
 
-func (s *Space) applyForce(dt float64) {
-	for i := range s.particles {
-		pt1 := &s.particles[i]
-		for j := i + 1; j < len(s.particles); j++ {
-			pt2 := &s.particles[j]
+const G = 6.67384
+var _ = math.MaxFloat64 // TODO: remove this
 
-			dx := pt1.position.X - pt2.position.X
-			dy := pt1.position.Y - pt2.position.Y
+func evaluate(particles []Particle, dt float64, k int) {
+	if k == 0 {
+		for i := range particles {
+			p := &particles[i]
+
+			for i := 0; i < 4; i++ {
+				p.dPosition[i] = p.Position
+				p.dMomentum[i] = p.Momentum
+				p.dRecalculate(i)
+				p.dForce[i] = vect.V{}
+			}
+		}
+	}
+	for i := range particles {
+		p := &particles[i]
+		for j := i + 1; j < len(particles); j++ {
+			q := &particles[j]
+
+			dx := p.dPosition[k].X - q.dPosition[k].X
+			dy := p.dPosition[k].Y - q.dPosition[k].Y
+			if dx < 0.01 && dy < 0.01 {
+				continue
+			}
 
 			dSquared := dx*dx + dy*dy
 			distance := math.Sqrt(dSquared)
 			mag := dSquared * distance
 
-			pt1.force.X -= dx * pt2.mass * mag
-			pt1.force.Y -= dy * pt2.mass * mag
+			fX := G*p.Mass*q.Mass*dx / mag
+			fY := G*p.Mass*q.Mass*dy / mag
 
-			pt2.force.X += dx * pt1.mass * mag
-			pt2.force.Y += dy * pt1.mass * mag
+			p.dForce[k].X -= fX
+			p.dForce[k].Y -= fY
+
+			q.dForce[k].X += fX
+			q.dForce[k].Y += fY
 		}
 	}
-	/*
-	for i := range s.particles {
-		pt1 := &s.particles[i]
-		//for j := range s.particles[i+1:len(s.particles)-1] {
-		for j := i + 1; j < len(s.particles); j++ {
-			pt2 := &s.particles[j]
+	if k != 0 {
+		for i := range particles {
+			p := &particles[i]
 
-			dV := pt1.position.Sub(pt2.position)
+			p.dPosition[k].X = p.Position.X + p.dvelocity[k-1].X * dt
+			p.dPosition[k].Y = p.Position.Y + p.dvelocity[k-1].Y * dt
 
-			dSquared := dV.Dot(dV)
-			distance := math.Sqrt(dSquared)
-			mag := dSquared * distance
-
-			pt1.force = pt1.force.Sub(dV.Mul(pt2.mass * mag))
-			pt2.force = pt2.force.Add(dV.Mul(pt1.mass * mag))
+			p.dMomentum[k].X = p.Momentum.X + p.dForce[k-1].X * dt
+			p.dMomentum[k].Y = p.Momentum.Y + p.dForce[k-1].Y * dt
+			p.dRecalculate(k)
 		}
 	}
-	*/
 }
 
-func (s *Space) Integrate(dt float64) {
-	s.applyForce(dt)
-	for i := range s.particles {
-		integrate(&s.particles[i].State, s.time, dt)
+func updateParameters(particles []Particle) {
+	for i := range particles {
+		p := &particles[i]
+		p.Position = calculateRK4Mean(p.dPosition)
+		p.Momentum = calculateRK4Mean(p.dMomentum)
+		p.Recalculate()
 	}
-	s.time += dt
+}
+
+func calculateRK4Mean(vs [4]vect.V) vect.V {
+	const FRAC = 1.0/6.0
+	return vect.V {
+		X: FRAC * (vs[0].X + 2*(vs[1].X + vs[2].X) + vs[3].X),
+		Y: FRAC * (vs[0].Y + 2*(vs[1].Y + vs[2].Y) + vs[3].Y),
+	}
 }
 
