@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"github.com/andrebq/gas"
 	"github.com/go-gl/gl"
 	"github.com/go-gl/glfw3"
@@ -17,8 +18,15 @@ import (
 )
 
 const (
-	PARTICLE_COUNT = 4096
-	PARTICLE_MASS  = 1.0/2048
+	PARTICLE_COUNT_DEFAULT = 4096
+	PARTICLE_MASS_DEFAULT  = 1.0/2048
+)
+
+var _ = math.MaxFloat64
+
+var (
+	particleCount = flag.Int("c", PARTICLE_COUNT_DEFAULT, "particles count")
+	particleMass = flag.Float64("m", PARTICLE_MASS_DEFAULT, "particle mass")
 )
 
 func randFloat05() float64 {
@@ -26,17 +34,20 @@ func randFloat05() float64 {
 }
 
 func main() {
+	flag.Parse()
 	rand.Seed(time.Now().UnixNano())
 	space := MkSpace()
-	for i := 0; i < PARTICLE_COUNT; i++ {
-		particle := space.MkParticle(PARTICLE_MASS)
-		r := rand.Float64()
-		th := 2 * math.Pi * rand.Float64()
-		particle.SetPosition(vect.Angle(th).Mul(r))
-		px := randFloat05() * PARTICLE_MASS
-		py := randFloat05() * PARTICLE_MASS
-		particle.Momentum = particle.Momentum.Add(vect.V{px, py})
-		particle.Recalculate()
+	for i := 0; i < *particleCount; i++ {
+		particle := space.MkParticle(*particleMass)
+		//r := rand.Float64()
+		//th := 2 * math.Pi * rand.Float64()
+		//particle.SetPosition(vect.Angle(th).Mul(r))
+		x := randFloat05()
+		y := randFloat05()
+		particle.SetPosition(vect.V{x, y})
+		px := 0.0 // randFloat05() * *particleMass
+		py := 0.0 // randFloat05() * *particleMass
+		particle.SetVelocity(vect.V{px, py})
 	}
 	screen, err := MkScreen(512, 512, "GO TICKLES")
 	if err != nil {

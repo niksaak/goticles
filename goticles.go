@@ -6,32 +6,19 @@ import (
 	"math"
 )
 
+var SuperVerbose bool
+
 type Particle struct {
 	Id          int
 	Position    vect.V
-	dPosition   [4]vect.V
-	Momentum    vect.V
-	dMomentum   [4]vect.V
-	velocity    vect.V
-	dvelocity   [4]vect.V
+	Velocity    vect.V
 	Force       vect.V
-	dForce      [4]vect.V
 	Mass        float64
 	massInverse float64
 }
 
 func (p *Particle) SetPosition(pos vect.V) {
 	p.Position = pos
-	p.Recalculate()
-}
-
-func (p *Particle) SetMomentum(momentum vect.V) {
-	p.Momentum = momentum
-	p.Recalculate()
-}
-
-func (p *Particle) SetForce(force vect.V) {
-	p.Force = force
 }
 
 func (p *Particle) SetMass(mass float64) {
@@ -39,32 +26,29 @@ func (p *Particle) SetMass(mass float64) {
 	p.massInverse = 1 / mass
 }
 
-func (p Particle) Velocity() vect.V {
-	return p.velocity
+func (p *Particle) SetVelocity(vel vect.V) {
+	p.Velocity = vel
+}
+
+func (p *Particle) ApplyImpulse(imp vect.V) {
+	p.SetVelocity(imp.Mul(p.massInverse))
 }
 
 func (p *Particle) String() string {
 	return fmt.Sprintf(
-		"#%4d; X(%2.4f, %2.4f); P(%2.4f, %2.4f); V(%2.4f, %2.4f)",
+		"#%4d; X(%2.4f, %2.4f); V(%2.4f, %2.4f)",
 		p.Id,
 		p.Position.X, p.Position.Y,
-		p.Momentum.X, p.Momentum.Y,
-		p.velocity.X, p.velocity.Y)
-}
-
-func (p *Particle) Recalculate() {
-	p.velocity.X = p.Momentum.X * p.massInverse
-	p.velocity.Y = p.Momentum.Y * p.massInverse
-}
-
-func (p *Particle) dRecalculate(k int) {
-	p.dvelocity[k].X = p.dMomentum[k].X * p.massInverse
-	p.dvelocity[k].Y = p.dMomentum[k].Y * p.massInverse
+		p.Velocity.X, p.Velocity.Y)
 }
 
 type Space struct {
 	time float64
 	Particles []Particle
+	positions [][4]vect.V
+	velocities [][4]vect.V
+	masses []float64
+	massInverses []float64
 }
 
 func MkSpace() *Space {
@@ -77,90 +61,102 @@ func (s *Space) Particle(id int) *Particle {
 
 func (s *Space) MkParticle(mass float64) *Particle {
 	id := len(s.Particles)
-	p := Particle{Id: id}
-	p.SetMass(mass)
-	s.Particles = append(s.Particles, p)
+	s.Particles = append(s.Particles, Particle{
+		Id: id,
+		Mass: mass,
+		massInverse: 1/mass,
+	})
+	s.positions = append(s.positions, [4]vect.V{})
+	s.velocities = append(s.velocities, [4]vect.V{})
 	return &s.Particles[id]
 }
 
-func (s *Space) Step(dt float64) {
-	evaluate(s.Particles, 0, 0)
-	evaluate(s.Particles, dt/2, 1)
-	evaluate(s.Particles, dt/2, 2)
-	evaluate(s.Particles, dt, 3)
-	updateParameters(s.Particles)
-	s.time += dt
-}
-
-const G = 6.67384
+const G = 6.67384e-11
 var _ = math.MaxFloat64 // TODO: remove this
 
-func evaluate(particles []Particle, dt float64, k int) {
-	if k == 0 {
-		for i := range particles {
-			p := &particles[i]
+func (s *Space) Step(dt float64) {
+	s.evaluate1()
+	s.evaluateK(dt/2, 1)
+	s.evaluateK(dt/2, 2)
+	s.evaluateK(dt, 3)
+	s.applyState(dt)
+}
 
-			for i := 0; i < 4; i++ {
-				p.dPosition[i] = p.Position
-				p.dMomentum[i] = p.Momentum
-				p.dRecalculate(i)
-				p.dForce[i] = vect.V{}
-			}
-		}
+func (s *Space) evaluate1() {
+	particleCount := len(s.Particles)
+
+	// check integration arrays size
+	if len(s.positions) != particleCount {
+		s.positions = make([][4]vect.V, particleCount)
 	}
-	for i := range particles {
-		p := &particles[i]
-		for j := i + 1; j < len(particles); j++ {
-			q := &particles[j]
+	if len(s.velocities) != particleCount {
+		s.velocities = make([][4]vect.V, particleCount)
+	}
+	if len(s.masses) != particleCount {
+		s.masses = make([]float64, particleCount)
+	}
+	if len(s.massInverses) != particleCount {
+		s.massInverses = make([]float64, particleCount)
+	}
 
-			dx := p.dPosition[k].X - q.dPosition[k].X
-			dy := p.dPosition[k].Y - q.dPosition[k].Y
-			if dx < 0.01 && dy < 0.01 {
+	// get state
+	for i, p := range s.Particles {
+		s.positions[i][0] = p.Position
+		s.velocities[i][0] = p.Velocity
+		s.masses[i] = p.Mass
+		s.massInverses[i] = p.massInverse
+	}
+}
+
+func (s *Space) evaluateK(dt float64, k int) {
+	for i := range s.positions {
+		position := &s.positions[i][k]
+		position.X = s.positions[i][0].X + s.velocities[i][k-1].X * dt
+		position.Y = s.positions[i][0].Y + s.velocities[i][k-1].Y * dt
+
+		s.velocities[i][k] = s.velocities[i][0]
+	}
+	for i := range s.positions {
+		position := &s.positions[i][k]
+		m1 := s.masses[i]
+		for j := i + 1; j < len(s.positions); j++ {
+			m2 := s.masses[j]
+
+			dx := position.X - s.positions[j][k].X
+			dy := position.Y - s.positions[j][k].Y
+			if dx == 0 && dy == 0 {
 				continue
 			}
 
 			dSquared := dx*dx + dy*dy
 			distance := math.Sqrt(dSquared)
-			mag := dSquared * distance
+			mag := dSquared + distance*0
 
-			fX := G*p.Mass*q.Mass*dx / mag
-			fY := G*p.Mass*q.Mass*dy / mag
+			fX := G * m1 * m2 * dx / mag
+			fY := G * m1 * m2 * dy / mag
 
-			p.dForce[k].X -= fX
-			p.dForce[k].Y -= fY
+			s.velocities[i][k].X -= fX * dt
+			s.velocities[i][k].Y -= fY * dt
 
-			q.dForce[k].X += fX
-			q.dForce[k].Y += fY
-		}
-	}
-	if k != 0 {
-		for i := range particles {
-			p := &particles[i]
-
-			p.dPosition[k].X = p.Position.X + p.dvelocity[k-1].X * dt
-			p.dPosition[k].Y = p.Position.Y + p.dvelocity[k-1].Y * dt
-
-			p.dMomentum[k].X = p.Momentum.X + p.dForce[k-1].X * dt
-			p.dMomentum[k].Y = p.Momentum.Y + p.dForce[k-1].Y * dt
-			p.dRecalculate(k)
+			s.velocities[j][k].X += fX * dt
+			s.velocities[j][k].Y += fY * dt
 		}
 	}
 }
 
-func updateParameters(particles []Particle) {
-	for i := range particles {
-		p := &particles[i]
-		p.Position = calculateRK4Mean(p.dPosition)
-		p.Momentum = calculateRK4Mean(p.dMomentum)
-		p.Recalculate()
+func (s *Space) applyState(dt float64) {
+	for i := range s.Particles {
+		p := &s.Particles[i]
+		p.Position = rk4Mean(dt, s.positions[i])
+		p.Velocity = rk4Mean(dt, s.velocities[i])
 	}
 }
 
-func calculateRK4Mean(vs [4]vect.V) vect.V {
-	const FRAC = 1.0/6.0
-	return vect.V {
-		X: FRAC * (vs[0].X + 2*(vs[1].X + vs[2].X) + vs[3].X),
-		Y: FRAC * (vs[0].Y + 2*(vs[1].Y + vs[2].Y) + vs[3].Y),
+func rk4Mean(dt float64, vec [4]vect.V) vect.V {
+	const FRAC = 1.0 / 6.0
+	return vect.V{
+		X: /*dt */ FRAC * (vec[0].X + 2*(vec[1].X + vec[2].X) + vec[3].X),
+		Y: /*dt */ FRAC * (vec[0].Y + 2*(vec[1].Y + vec[2].Y) + vec[3].Y),
 	}
 }
 
