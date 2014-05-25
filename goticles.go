@@ -46,7 +46,6 @@ type Space struct {
 	positions    [][4]vect.V
 	velocities   [][4]vect.V
 	masses       []float64
-	massInverses []float64
 }
 
 func MkSpace() *Space {
@@ -62,7 +61,7 @@ func (s *Space) MkParticle(mass float64) *Particle {
 	s.Particles = append(s.Particles, Particle{
 		Id:          id,
 		Mass:        mass,
-		massInverse: 1 / mass,
+		massInverse: 1.0 / mass,
 	})
 	s.positions = append(s.positions, [4]vect.V{})
 	s.velocities = append(s.velocities, [4]vect.V{})
@@ -93,16 +92,12 @@ func (s *Space) evaluate1() {
 	if len(s.masses) != particleCount {
 		s.masses = make([]float64, particleCount)
 	}
-	if len(s.massInverses) != particleCount {
-		s.massInverses = make([]float64, particleCount)
-	}
 
 	// get state
 	for i, p := range s.Particles {
 		s.positions[i][0] = p.Position
 		s.velocities[i][0] = p.Velocity
 		s.masses[i] = p.Mass
-		s.massInverses[i] = p.massInverse
 	}
 }
 
