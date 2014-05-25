@@ -1,12 +1,10 @@
 package goticles
 
 import (
-	"github.com/niksaak/goticles/vect"
 	"fmt"
+	"github.com/niksaak/goticles/vect"
 	"math"
 )
-
-var SuperVerbose bool
 
 type Particle struct {
 	Id          int
@@ -43,11 +41,11 @@ func (p *Particle) String() string {
 }
 
 type Space struct {
-	time float64
-	Particles []Particle
-	positions [][4]vect.V
-	velocities [][4]vect.V
-	masses []float64
+	Time         float64
+	Particles    []Particle
+	positions    [][4]vect.V
+	velocities   [][4]vect.V
+	masses       []float64
 	massInverses []float64
 }
 
@@ -62,9 +60,9 @@ func (s *Space) Particle(id int) *Particle {
 func (s *Space) MkParticle(mass float64) *Particle {
 	id := len(s.Particles)
 	s.Particles = append(s.Particles, Particle{
-		Id: id,
-		Mass: mass,
-		massInverse: 1/mass,
+		Id:          id,
+		Mass:        mass,
+		massInverse: 1 / mass,
 	})
 	s.positions = append(s.positions, [4]vect.V{})
 	s.velocities = append(s.velocities, [4]vect.V{})
@@ -72,7 +70,6 @@ func (s *Space) MkParticle(mass float64) *Particle {
 }
 
 const G = 6.67384e-11
-var _ = math.MaxFloat64 // TODO: remove this
 
 func (s *Space) Step(dt float64) {
 	s.evaluate1()
@@ -80,6 +77,7 @@ func (s *Space) Step(dt float64) {
 	s.evaluateK(dt/2, 2)
 	s.evaluateK(dt, 3)
 	s.applyState(dt)
+	s.Time += dt
 }
 
 func (s *Space) evaluate1() {
@@ -111,8 +109,8 @@ func (s *Space) evaluate1() {
 func (s *Space) evaluateK(dt float64, k int) {
 	for i := range s.positions {
 		position := &s.positions[i][k]
-		position.X = s.positions[i][0].X + s.velocities[i][k-1].X * dt
-		position.Y = s.positions[i][0].Y + s.velocities[i][k-1].Y * dt
+		position.X = s.positions[i][0].X + s.velocities[i][k-1].X*dt
+		position.Y = s.positions[i][0].Y + s.velocities[i][k-1].Y*dt
 
 		s.velocities[i][k] = s.velocities[i][0]
 	}
@@ -155,8 +153,7 @@ func (s *Space) applyState(dt float64) {
 func rk4Mean(dt float64, vec [4]vect.V) vect.V {
 	const FRAC = 1.0 / 6.0
 	return vect.V{
-		X: /*dt */ FRAC * (vec[0].X + 2*(vec[1].X + vec[2].X) + vec[3].X),
-		Y: /*dt */ FRAC * (vec[0].Y + 2*(vec[1].Y + vec[2].Y) + vec[3].Y),
+		X: FRAC * (vec[0].X + 2*(vec[1].X+vec[2].X) + vec[3].X),
+		Y: FRAC * (vec[0].Y + 2*(vec[1].Y+vec[2].Y) + vec[3].Y),
 	}
 }
-
