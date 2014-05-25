@@ -18,15 +18,15 @@ import (
 )
 
 const (
-	PARTICLE_COUNT_DEFAULT = 4096
-	PARTICLE_MASS_DEFAULT  = 1.0/2048
+	PARTICLE_COUNT_DEFAULT = 1024
+	PARTICLE_MASS_DEFAULT  = 2048
 )
 
 var _ = math.MaxFloat64
 
 var (
 	particleCount = flag.Int("c", PARTICLE_COUNT_DEFAULT, "particles count")
-	particleMass = flag.Float64("m", PARTICLE_MASS_DEFAULT, "particle mass")
+	particleMass  = flag.Float64("m", PARTICLE_MASS_DEFAULT, "particle mass")
 )
 
 func randFloat05() float64 {
@@ -58,7 +58,7 @@ func main() {
 
 func SimulateOnScreenFixed(s *Space, step float64, screen *Screen) {
 	const (
-		STEPPING_MULTIPLIER = 1.0/2
+		STEPPING_MULTIPLIER = 1.0 / 2
 	)
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
@@ -95,7 +95,7 @@ func SimulateOnScreenFixed(s *Space, step float64, screen *Screen) {
 
 type Screen struct {
 	window *glfw3.Window
-	font *gltext.Font
+	font   *gltext.Font
 }
 
 func MkScreen(width, height int, title string) (*Screen, error) {
@@ -175,8 +175,8 @@ func setupFont(scale int32) (*gltext.Font, error) {
 }
 
 func (s *Screen) Init(width, height int, title string) (*Screen, error) {
-	const(
-		DEFAULT_WIDTH = 512
+	const (
+		DEFAULT_WIDTH  = 512
 		DEFAULT_HEIGHT = 512
 	)
 	if width <= 0 {
@@ -202,4 +202,3 @@ func (s *Screen) Init(width, height int, title string) (*Screen, error) {
 
 	return s, nil
 }
-
