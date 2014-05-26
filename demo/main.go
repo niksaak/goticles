@@ -39,14 +39,14 @@ func main() {
 	space := MkSpace()
 	for i := 0; i < *particleCount; i++ {
 		particle := space.MkParticle(*particleMass)
-		//r := rand.Float64()
-		//th := 2 * math.Pi * rand.Float64()
-		//particle.SetPosition(vect.Angle(th).Mul(r))
-		x := randFloat05()
-		y := randFloat05()
-		particle.SetPosition(vect.V{x, y})
-		px := 0.0 // randFloat05() * *particleMass
-		py := 0.0 // randFloat05() * *particleMass
+		r := rand.Float64()
+		th := 2 * math.Pi * rand.Float64()
+		particle.SetPosition(vect.Angle(th).Mul(r))
+		//x := randFloat05()
+		//y := randFloat05()
+		//particle.SetPosition(vect.V{x, y})
+		px := randFloat05() / 8
+		py := randFloat05() / 8
 		particle.SetVelocity(vect.V{px, py})
 	}
 	screen, err := MkScreen(512, 512, "GO TICKLES")
@@ -58,7 +58,7 @@ func main() {
 
 func SimulateOnScreenFixed(s *Space, step float64, screen *Screen) {
 	const (
-		STEPPING_MULTIPLIER = 1.0 / 2
+		STEPPING_MULTIPLIER = 1
 	)
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()

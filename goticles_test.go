@@ -12,7 +12,7 @@ func rf64() float64 {
 }
 
 func TestOneBodyPositionChange(t *testing.T) {
-	const STEP = 1.0 / 1
+	const STEP = 1.0 / 100
 	space := MkSpace()
 	p := space.MkParticle(1)
 	if count := len(space.Particles); count != 1 {
@@ -20,10 +20,10 @@ func TestOneBodyPositionChange(t *testing.T) {
 	}
 	p.SetPosition(vect.V{0, 0})
 	p.SetVelocity(vect.V{1, 0})
-	t.Logf("%.4f: %v", 0.0, p)
-	for c := 0.0; c < 1+G; c += STEP {
+	t.Logf("%.4f: %v", space.Time, p)
+	for c := 0.0; c < 1; c += STEP {
 		space.Step(STEP)
-		t.Logf("%.4f: %v", c, p)
+		t.Logf("%.4f: %v", space.Time, p)
 	}
 }
 
