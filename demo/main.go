@@ -36,7 +36,7 @@ func randFloat05() float64 {
 func main() {
 	flag.Parse()
 	rand.Seed(time.Now().UnixNano())
-	space := MkSpace()
+	space := MkSpaceRK4()
 	for i := 0; i < *particleCount; i++ {
 		particle := space.MkParticle(*particleMass)
 		r := rand.Float64()
@@ -56,7 +56,7 @@ func main() {
 	SimulateOnScreenFixed(space, 1.0/60, screen)
 }
 
-func SimulateOnScreenFixed(s *Space, step float64, screen *Screen) {
+func SimulateOnScreenFixed(s Space, step float64, screen *Screen) {
 	const (
 		STEPPING_MULTIPLIER = 1
 	)
@@ -65,7 +65,8 @@ func SimulateOnScreenFixed(s *Space, step float64, screen *Screen) {
 
 	screen.window.MakeContextCurrent()
 
-	points := make([]vect.V, len(s.Particles))
+	// FIXME: gotta be more generic
+	points := make([]vect.V, len(s.(*SpaceRK4).Particles))
 
 	tick := time.Tick(time.Duration(step * float64(time.Second)))
 	debug := time.Tick(1 * time.Second)
@@ -77,7 +78,8 @@ func SimulateOnScreenFixed(s *Space, step float64, screen *Screen) {
 		case <-tick:
 			s.Step(step * STEPPING_MULTIPLIER)
 			for i := range points {
-				points[i] = s.Particles[i].Position
+				// FIXME: gotta be more generic
+				points[i] = s.(*SpaceRK4).Particles[i].Position
 			}
 			gl.Clear(gl.COLOR_BUFFER_BIT)
 			gl.VertexPointer(2, gl.DOUBLE, 0, points)
