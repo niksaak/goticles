@@ -63,6 +63,11 @@ func (v V) LenSq() float64 {
 	return v.Dot(v)
 }
 
+// Ulen returns v normalized to unit length.
+func (v V) Ulen() V {
+	return v.Mul(1.0 / v.Len())
+}
+
 func Angle(a float64) V {
 	return V{
 		X: math.Cos(a),
