@@ -44,6 +44,21 @@ func (s Side) Vect() vect.V {
 	}
 }
 
+func (s *Side) String() string {
+	var ret string
+	if *s & south != 0 {
+		ret += "South"
+	} else {
+		ret += "North"
+	}
+	if *s & west != 0 {
+		ret += "West"
+	} else {
+		ret += "East"
+	}
+	return ret
+}
+
 // The BB type represents an axis-aligned bounding box, storing its topleft and
 // bottomright corners.
 type BB [2]vect.V
