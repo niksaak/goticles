@@ -5,14 +5,6 @@ import (
 	"github.com/niksaak/goticles/vect"
 )
 
-// The Spacer interface is satisfied by particle simulation types.
-type Spacer interface {
-	Particle(id int) *Particle         // get particle
-	MkParticle(mass float64) *Particle // add particle to the simulation
-	RmParticle(p *Particle)            // remove particle from the simulation
-	Step(dt float64)                   // step simulation by dt
-}
-
 // The Particle represents a unit in a simulation.
 type Particle struct {
 	Id          int // identifier

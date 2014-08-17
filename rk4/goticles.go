@@ -41,9 +41,3 @@ func (p *Particle) String() string {
 
 const G = 6.67384e-11
 
-type Space interface {
-	Particle(id int) *Particle
-	MkParticle(mass float64) *Particle
-	Step(dt float64)
-}
-
