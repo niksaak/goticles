@@ -62,14 +62,9 @@ func TestQuadTreeBuilding(t *testing.T) {
 	t.Logf("\n%s", treeString(quad, ""))
 }
 
-func (p *Particle) String() string {
-	return fmt.Sprintf("particle @%v, ->%v, m: %v",
-		p.Position, p.Velocity, p.Mass)
-}
-
 func logParticles(s *Space, tb testing.TB) {
 	for _, p := range s.Particles {
-		tb.Log(p.String())
+		tb.Log(p.Position)
 	}
 }
 
@@ -121,4 +116,5 @@ func BenchmarkBarnesHutSimulation(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		space.Step(STEP)
 	}
+	b.Logf("%v", space.Particle(0).Position)
 }

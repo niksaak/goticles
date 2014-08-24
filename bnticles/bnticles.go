@@ -2,26 +2,13 @@ package bnticles
 
 import (
 	//"fmt"
+	"github.com/niksaak/goticles"
 	"github.com/niksaak/goticles/vect"
 )
 
-// The Particle represents a unit in a simulation.
-type Particle struct {
-	Id          int // identifier
-	Position    vect.V
-	Velocity    vect.V
-	Force       vect.V
-	Mass        float64
-	massInverse float64 // = (1 / Particle.Mass)
-}
-
-func (p *Particle) recalculate() {
-	p.massInverse = 1 / p.Mass
-}
-
 type Space struct {
 	time        float64
-	Particles   []Particle
+	Particles   []goticles.P
 	bnParticles [4][]particle
 }
 
@@ -29,19 +16,18 @@ func New() *Space {
 	return new(Space)
 }
 
-func (s *Space) Particle(id int) *Particle {
+func (s *Space) Particle(id int) *goticles.P {
 	if id >= len(s.Particles) {
 		return nil
 	}
 	return &s.Particles[id]
 }
 
-func (s *Space) MkParticle(mass float64) *Particle {
+func (s *Space) MkParticle(mass float64) *goticles.P {
 	id := len(s.Particles)
-	s.Particles = append(s.Particles, Particle{
+	s.Particles = append(s.Particles, goticles.P{
 		Id:          id,
 		Mass:        mass,
-		massInverse: 1 / mass,
 	})
 	for i := range s.bnParticles {
 		s.bnParticles[i] = append(s.bnParticles[i], particle{})
@@ -49,7 +35,7 @@ func (s *Space) MkParticle(mass float64) *Particle {
 	return &s.Particles[id]
 }
 
-func (s *Space) RmParticle(p *Particle) {
+func (s *Space) RmParticle(p *goticles.P) {
 	// TODO
 }
 

@@ -1,4 +1,4 @@
-package goticles
+package rk4
 
 import (
 	"github.com/niksaak/goticles/vect"

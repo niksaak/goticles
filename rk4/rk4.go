@@ -1,39 +1,39 @@
-package goticles
+package rk4
 
 import (
+	"github.com/niksaak/goticles"
 	"github.com/niksaak/goticles/vect"
 	"math"
 )
 
-type SpaceRK4 struct {
+type Space struct {
 	Time         float64
-	Particles    []Particle
+	Particles    []goticles.P
 	positions    [][4]vect.V
 	velocities   [][4]vect.V
 	masses       []float64
 }
 
-func MkSpaceRK4() *SpaceRK4 {
-	return new(SpaceRK4)
+func New() *Space {
+	return new(Space)
 }
 
-func (s *SpaceRK4) Particle(id int) *Particle {
+func (s *Space) Particle(id int) *goticles.P {
 	return &s.Particles[id]
 }
 
-func (s *SpaceRK4) MkParticle(mass float64) *Particle {
+func (s *Space) MkParticle(mass float64) *goticles.P {
 	id := len(s.Particles)
-	s.Particles = append(s.Particles, Particle{
+	s.Particles = append(s.Particles, goticles.P{
 		Id:          id,
 		Mass:        mass,
-		massInverse: 1.0 / mass,
 	})
 	s.positions = append(s.positions, [4]vect.V{})
 	s.velocities = append(s.velocities, [4]vect.V{})
 	return &s.Particles[id]
 }
 
-func (s *SpaceRK4) Step(dt float64) {
+func (s *Space) Step(dt float64) {
 	s.evaluate1()
 	s.evaluateK(dt/2, 1)
 	s.evaluateK(dt/2, 2)
@@ -42,7 +42,7 @@ func (s *SpaceRK4) Step(dt float64) {
 	s.Time += dt
 }
 
-func (s *SpaceRK4) evaluate1() {
+func (s *Space) evaluate1() {
 	particleCount := len(s.Particles)
 
 	// check integration arrays size
@@ -64,7 +64,7 @@ func (s *SpaceRK4) evaluate1() {
 	}
 }
 
-func (s *SpaceRK4) evaluateK(dt float64, k int) {
+func (s *Space) evaluateK(dt float64, k int) {
 	for i := range s.positions {
 		position := &s.positions[i][k]
 		position.X = s.positions[i][0].X + s.velocities[i][k-1].X*dt
@@ -100,7 +100,7 @@ func (s *SpaceRK4) evaluateK(dt float64, k int) {
 	}
 }
 
-func (s *SpaceRK4) applyState(dt float64) {
+func (s *Space) applyState(dt float64) {
 	for i := range s.Particles {
 		p := &s.Particles[i]
 		p.Position = rk4Mean(dt, s.positions[i])
