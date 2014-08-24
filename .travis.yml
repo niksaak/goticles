@@ -7,5 +7,5 @@ go:
 before_install:
     - sudo add-apt-repository 'deb http://us.archive.ubuntu.com/ubuntu/ utopic main restricted universe multiverse'
     - sudo add-apt-repository 'deb http://us.archive.ubuntu.com/ubuntu/ utopic-updates main restricted universe multiverse'
-    - sudo apt-get update -qy
-    - sudo apt-get install -qy libglew1.10 libglfw3 libglfw3-dev libglew-dev
+    - sudo apt-get update -qq
+    - sudo apt-get install -qq libglew1.10 libglfw3 libglfw3-dev libglew-dev
