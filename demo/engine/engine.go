@@ -25,8 +25,10 @@ func (e *Engine) Initialize(title string, params Params, state State) error {
 
 	glfw3.SetErrorCallback(OnError)
 
+	glfw3.WindowHint(glfw3.Resizable, glfw3.True)
 	glfw3.WindowHint(glfw3.ContextVersionMajor, params.Version[0])
 	glfw3.WindowHint(glfw3.ContextVersionMinor, params.Version[1])
+	glfw3.WindowHint(glfw3.OpenglDebugContext, glfw3.True)
 
 	size := params.Size
 	window, err := glfw3.CreateWindow(size[0], size[1], title, nil, nil)
@@ -62,9 +64,8 @@ func (e *Engine) Run() error {
 		state.Resize(width, height)
 	}
 
-	before := time.Now()
 	ticker := time.Tick(1 * time.Second / 60)
-	for now := range ticker {
+	for _ = range ticker {
 		glfw3.PollEvents()
 
 		if e.window.ShouldClose() {
@@ -77,7 +78,7 @@ func (e *Engine) Run() error {
 		}
 
 		if state, ok := e.state.(Updater); ok {
-			if err := state.Update(now.Sub(before)); err != nil {
+			if err := state.Update(1.0 / 60); err != nil {
 				return err
 			}
 		}
@@ -86,7 +87,6 @@ func (e *Engine) Run() error {
 				return err
 			}
 		}
-		before = now
 
 		e.window.SwapBuffers()
 	}
@@ -155,7 +155,7 @@ type State interface {
 }
 
 type Updater interface {
-	Update(dt time.Duration) error
+	Update(dt float64) error
 }
 
 type Renderer interface {
