@@ -5,6 +5,7 @@ go:
     - tip
 
 before_install:
-    - sudo add-apt-repository 'deb http://us.archive.ubuntu.com/ubuntu/ utopic universe'
-    - sudo apt-get update -qq
-    - sudo apt-get install -qq libglew1.10 libglfw3 libglfw3-dev libglew-dev
+    - sudo add-apt-repository 'deb http://us.archive.ubuntu.com/ubuntu/ utopic universe multiverse'
+    - sudo add-apt-repository 'deb http://us.archive.ubuntu.com/ubuntu/ utopic-updates universe multiverse'
+    - sudo apt-get update -qy
+    - sudo apt-get install -qy libglew1.10 libglfw3 libglfw3-dev libglew-dev
