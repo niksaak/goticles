@@ -74,4 +74,3 @@ func Angle(a float64) V {
 		Y: math.Sin(a),
 	}
 }
-

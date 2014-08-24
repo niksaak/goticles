@@ -32,9 +32,6 @@ type Spacer interface {
 	Step(dt float64)
 }
 
-var _ Spacer = &bnticles.Space{}
-var _ Spacer = &rk4.Space{}
-
 const (
 	PARTICLE_MASS_DEFAULT  = 100
 	PARTICLE_COUNT_DEFAULT = 512
@@ -60,6 +57,7 @@ func (s *MainState) Init() error {
 	var vao uint32
 	gl.GenVertexArrays(1, &vao)
 	gl.BindVertexArray(vao)
+	s.vertexArray = vao
 
 	// Set projection
 	projectionUniform := gl.GetUniformLocation(program, gl.Str("projection\x00"))
@@ -70,6 +68,7 @@ func (s *MainState) Init() error {
 	gl.GenBuffers(1, &buffer)
 	gl.BindBuffer(gl.ARRAY_BUFFER, buffer)
 	s.vertexBuffer = buffer
+
 	positionAttrib := uint32(gl.GetAttribLocation(program, gl.Str("position\x00")))
 	gl.EnableVertexAttribArray(positionAttrib)
 	gl.VertexAttribPointer(positionAttrib, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
@@ -92,7 +91,7 @@ func (s *MainState) Deinit() error {
 const accuracy = 1
 
 func (s *MainState) Update(dt float64) error {
-	s.space.Step(dt/accuracy)
+	s.space.Step(dt / accuracy)
 	return nil
 }
 
@@ -115,7 +114,7 @@ func (s *MainState) Render() error {
 	gl.InvalidateBufferData(buffer)
 	gl.BufferData(
 		gl.ARRAY_BUFFER,
-		int(PARTICLE_COUNT_DEFAULT * unsafe.Sizeof([2]float32{})),
+		int(PARTICLE_COUNT_DEFAULT*unsafe.Sizeof([2]float32{})),
 		nil,
 		gl.STREAM_DRAW)
 	dataPointer := gl.MapBuffer(gl.ARRAY_BUFFER, gl.WRITE_ONLY)
@@ -134,7 +133,7 @@ func (s *MainState) Render() error {
 	}
 	gl.UnmapBuffer(gl.ARRAY_BUFFER)
 
-	gl.DrawArrays(gl.POINTS, 0, PARTICLE_COUNT_DEFAULT * 2)
+	gl.DrawArrays(gl.POINTS, 0, PARTICLE_COUNT_DEFAULT*2)
 
 	return nil
 }
@@ -163,8 +162,6 @@ func (s *MainState) Resize(width int, height int) {
 func (s *MainState) Close() error {
 	return nil
 }
-
-var _ engine.StateFull = &MainState{}
 
 var projection = mgl32.Ident4()
 var vertexSource = `

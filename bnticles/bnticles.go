@@ -26,8 +26,8 @@ func (s *Space) Particle(id int) *goticles.P {
 func (s *Space) MkParticle(mass float64) *goticles.P {
 	id := len(s.Particles)
 	s.Particles = append(s.Particles, goticles.P{
-		Id:          id,
-		Mass:        mass,
+		Id:   id,
+		Mass: mass,
 	})
 	for i := range s.bnParticles {
 		s.bnParticles[i] = append(s.bnParticles[i], particle{})
@@ -42,9 +42,9 @@ func (s *Space) RmParticle(p *goticles.P) {
 func (s *Space) Step(dt float64) {
 	s.time += dt
 	s.evaluate1()
-	s.evaluateK(dt / 2, 1)
-	s.evaluateK(dt / 2, 2)
-	s.evaluateK(dt,     3)
+	s.evaluateK(dt/2, 1)
+	s.evaluateK(dt/2, 2)
+	s.evaluateK(dt, 3)
 	s.applyState()
 }
 
@@ -88,8 +88,7 @@ func (s *Space) applyState() {
 
 func rk4mean(k1, k2, k3, k4 vect.V) vect.V {
 	return vect.V{
-		X: (1.0/6.0) * (k1.X + 2*(k2.X + k3.X) + k4.X),
-		Y: (1.0/6.0) * (k1.Y + 2*(k2.Y + k3.Y) + k4.Y),
+		X: (1.0 / 6.0) * (k1.X + 2*(k2.X+k3.X) + k4.X),
+		Y: (1.0 / 6.0) * (k1.Y + 2*(k2.Y+k3.Y) + k4.Y),
 	}
 }
-

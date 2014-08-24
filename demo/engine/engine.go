@@ -146,7 +146,7 @@ func (e NotInitializedError) Error() string {
 
 type Params struct {
 	Version [2]int // major, minor
-	Size [2]int // width, height
+	Size    [2]int // width, height
 }
 
 type State interface {

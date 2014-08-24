@@ -1,9 +1,9 @@
 package bnticles
 
-import(
-	"math/rand"
+import (
 	"fmt"
 	"github.com/niksaak/goticles/vect"
+	"math/rand"
 	"testing"
 )
 
@@ -18,7 +18,7 @@ func treeString(nd node, prefix string) (s string) {
 			if child == nil {
 				s += prefix + TREESTRING_INDENT + "nil\n"
 			} else {
-				s += treeString(child, prefix + TREESTRING_INDENT)
+				s += treeString(child, prefix+TREESTRING_INDENT)
 			}
 		}
 	case *particle:

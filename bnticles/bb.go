@@ -46,12 +46,12 @@ func (s Side) Vect() vect.V {
 
 func (s *Side) String() string {
 	var ret string
-	if *s & south != 0 {
+	if *s&south != 0 {
 		ret += "South"
 	} else {
 		ret += "North"
 	}
-	if *s & west != 0 {
+	if *s&west != 0 {
 		ret += "West"
 	} else {
 		ret += "East"

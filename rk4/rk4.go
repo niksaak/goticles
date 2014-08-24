@@ -7,11 +7,11 @@ import (
 )
 
 type Space struct {
-	Time         float64
-	Particles    []goticles.P
-	positions    [][4]vect.V
-	velocities   [][4]vect.V
-	masses       []float64
+	Time       float64
+	Particles  []goticles.P
+	positions  [][4]vect.V
+	velocities [][4]vect.V
+	masses     []float64
 }
 
 func New() *Space {
@@ -25,8 +25,8 @@ func (s *Space) Particle(id int) *goticles.P {
 func (s *Space) MkParticle(mass float64) *goticles.P {
 	id := len(s.Particles)
 	s.Particles = append(s.Particles, goticles.P{
-		Id:          id,
-		Mass:        mass,
+		Id:   id,
+		Mass: mass,
 	})
 	s.positions = append(s.positions, [4]vect.V{})
 	s.velocities = append(s.velocities, [4]vect.V{})
