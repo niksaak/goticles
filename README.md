@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/niksaak/goticles.svg?branch=master)](https://travis-ci.org/niksaak/goticles)
 # Goticles
 
 *The gothicless gravitating particle simulation*
