@@ -76,6 +76,9 @@ func (q *quad) insert(p *particle) {
 	if q == nil {
 		panic("insert: quad is nil")
 	}
+	if !q.Query(p.position) {
+		return
+	}
 	side := q.sideFor(p.position)
 	if q.children[side] == nil {
 		q.children[side] = p
@@ -120,9 +123,6 @@ const (
 )
 
 func (p *particle) force(n node) vect.V {
-	if n == nil {
-		return vect.V{}
-	}
 	distV := p.position.Sub(n.Position())
 	distSq := distV.LenSq()
 	distU := distV.Ulen()
