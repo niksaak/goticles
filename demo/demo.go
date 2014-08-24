@@ -8,7 +8,7 @@ import (
 	"github.com/niksaak/goticles"
 	"github.com/niksaak/goticles/bnticles"
 	"github.com/niksaak/goticles/demo/engine"
-	"github.com/niksaak/goticles/rk4"
+	//"github.com/niksaak/goticles/rk4"
 	"github.com/niksaak/goticles/vect"
 	"math/rand"
 	"os"

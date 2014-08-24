@@ -13,13 +13,13 @@ func rf64() float64 {
 
 func TestOneBodyPositionChange(t *testing.T) {
 	const STEP = 1.0 / 100
-	space := MkSpaceRK4()
+	space := New()
 	p := space.MkParticle(1)
 	if count := len(space.Particles); count != 1 {
 		t.Errorf("particle count is not 1 but %d", count)
 	}
-	p.SetPosition(vect.V{0, 0})
-	p.SetVelocity(vect.V{1, 1})
+	p.Position = vect.V{0, 0}
+	p.Velocity = vect.V{1, 1}
 	t.Logf("%.4f: %v", space.Time, p)
 	for c := 0.0; c < 1; c += STEP {
 		space.Step(STEP)
@@ -30,11 +30,11 @@ func TestOneBodyPositionChange(t *testing.T) {
 func TestTwoBodyPositionChanges(t *testing.T) {
 	const STEP = 1.0 / 60
 	const MASS = 10000
-	space := MkSpaceRK4()
+	space := New()
 	p1 := space.MkParticle(MASS)
-	p1.SetPosition(vect.V{0, 0})
+	p1.Position = vect.V{0, 0}
 	p2 := space.MkParticle(MASS)
-	p2.SetPosition(vect.V{0.5, 0.5})
+	p2.Position = vect.V{0.5, 0.5}
 	t.Log("Before:")
 	t.Log(p1)
 	t.Log(p2)
@@ -44,12 +44,12 @@ func TestTwoBodyPositionChanges(t *testing.T) {
 	t.Log(p2)
 }
 
-func BenchmarkSpaceRK41(b *testing.B) {
+func BenchmarkSpace1(b *testing.B) {
 	const STEP = 1.0 / 60
 	const MASS = 10000
-	space := MkSpaceRK4()
+	space := New()
 	particle := space.MkParticle(MASS)
-	particle.SetVelocity(vect.V{1, 0})
+	particle.Velocity = vect.V{1, 0}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		space.Step(STEP)
@@ -57,14 +57,14 @@ func BenchmarkSpaceRK41(b *testing.B) {
 	b.Logf("t: %.4f; p: %v", space.Time, particle)
 }
 
-func BenchmarkSpaceRK4512(b *testing.B) {
+func BenchmarkSpace512(b *testing.B) {
 	const PARTICLE_COUNT = 512
 	const MASS = 10000
 	const STEP = 1.0 / 60
-	space := MkSpaceRK4()
+	space := New()
 	for i := 0; i < PARTICLE_COUNT; i++ {
 		particle := space.MkParticle(MASS)
-		particle.SetVelocity(vect.V{rf64(), rf64()})
+		particle.Velocity = vect.V{rf64(), rf64()}
 	}
 	particle := &space.Particles[0]
 	b.ResetTimer()
@@ -74,14 +74,14 @@ func BenchmarkSpaceRK4512(b *testing.B) {
 	b.Logf("t: %.4f; p: %v", space.Time, particle)
 }
 
-func BenchmarkSpaceRK41024(b *testing.B) {
+func BenchmarkSpace1024(b *testing.B) {
 	const PARTICLE_COUNT = 1024
 	const STEP = 1.0 / 60
 	const MASS = 10000
-	space := MkSpaceRK4()
+	space := New()
 	for i := 0; i < PARTICLE_COUNT; i++ {
 		particle := space.MkParticle(MASS)
-		particle.SetVelocity(vect.V{rf64(), rf64()})
+		particle.Velocity = vect.V{rf64(), rf64()}
 	}
 	particle := &space.Particles[0]
 	b.ResetTimer()
