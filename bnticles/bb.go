@@ -79,8 +79,8 @@ func (b BB) Size() float64 {
 }
 
 func (b BB) Query(v vect.V) bool {
-	return v.X >= b[0].X && v.Y >= b[0].Y &&
-		v.X > b[1].X && v.Y < b[1].Y
+	return v.X >= b[0].X && v.Y <= b[0].Y &&
+		v.X < b[1].X && v.Y > b[1].Y
 }
 
 func (b BB) Side(side Side) BB {
