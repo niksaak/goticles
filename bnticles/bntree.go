@@ -140,15 +140,18 @@ func (p *particle) treeForce(tree node) vect.V {
 		if size/dist < THETA {
 			return p.force(n)
 		} else {
+			force := vect.V{}
 			for _, child := range n.children {
-				return p.treeForce(child)
+				force = force.Add(p.treeForce(child))
 			}
+			return force
 		}
 	case *particle:
 		if n == p {
-			return vect.V{0, 0}
+			return vect.V{}
 		}
 		return p.force(n)
+	default:
+		panic(fmt.Errorf("treeForce: bad argument type - %T", tree))
 	}
-	panic(fmt.Errorf("treeForce: bad argument type - %T", tree))
 }
