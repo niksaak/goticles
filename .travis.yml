@@ -11,3 +11,4 @@ before_install:
 
 install:
     - sudo apt-get install -qq libglew1.10 libglfw3 libglfw3-dev libglew-dev
+    - go get -d -v ./... && go build -v ./...
