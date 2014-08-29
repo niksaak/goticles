@@ -120,11 +120,16 @@ func (p *particle) Children() ([4]node, bool) { return [4]node{}, false }
 const (
 	THETA = 0.6
 	G     = 6.67384e-11
+	TRESHOLD_VALUE = 2e-3 // TODO: rename this to something more sensible
+	TRESHOLD = TRESHOLD_VALUE * TRESHOLD_VALUE
 )
 
 func (p *particle) force(n node) vect.V {
 	distV := p.position.Sub(n.Position())
 	distSq := distV.LenSq()
+	if distSq < TRESHOLD {
+		return vect.V{}
+	}
 	distU := distV.Ulen()
 	return distU.Mul(G * p.mass * n.Mass() / distSq)
 }
