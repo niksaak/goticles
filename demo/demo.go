@@ -94,7 +94,6 @@ func (s *MainState) Init(engine *engine.E) error {
 }
 
 func (s *MainState) Deinit() {
-	return nil
 }
 
 const accuracy = 1
