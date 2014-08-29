@@ -67,7 +67,7 @@ func (e *E) Run() error {
 		return fmt.Errorf("not initialized")
 	}
 
-	if err := e.state.Init(); err != nil {
+	if err := e.state.Init(e); err != nil {
 		return err
 	}
 
@@ -115,7 +115,10 @@ func (e *E) Shutdown() (err error) {
 	if err := e.state.Deinit(); err != nil {
 		return err
 	}
-	return nil
+	err = e.executeDefers()
+	glfw3.Terminate()
+	*e = E{}
+	return err
 }
 
 func (e *E) OnKey(
@@ -155,43 +158,4 @@ func (e NotInitializedError) Error() string {
 		s += ": " + string(e)
 	}
 	return s
-}
-
-type State interface {
-	Init() error
-	Deinit() error
-}
-
-type Updater interface {
-	Update(dt float64) error
-}
-
-type Renderer interface {
-	Render() error
-}
-
-type KeyPresser interface {
-	KeyPress(glfw3.Key)
-}
-
-type KeyReleaser interface {
-	KeyRelease(glfw3.Key)
-}
-
-type Resizer interface {
-	Resize(width int, height int)
-}
-
-type Closer interface {
-	Close() error
-}
-
-type StateFull interface {
-	State
-	Updater
-	Renderer
-	KeyPresser
-	KeyReleaser
-	Resizer
-	Closer
 }

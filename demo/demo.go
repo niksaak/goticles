@@ -47,7 +47,7 @@ type MainState struct {
 func (s *MainState) Init(engine *engine.E) error {
 	println("initializing state")
 	// Initialize rendering
-	program, err := initGraphics()
+	program, err := initGraphics(engine)
 	if err != nil {
 		return err
 	}
@@ -58,6 +58,9 @@ func (s *MainState) Init(engine *engine.E) error {
 	gl.GenVertexArrays(1, &vao)
 	gl.BindVertexArray(vao)
 	s.vertexArray = vao
+	engine.Defer(func(){
+		gl.DeleteVertexArrays(1, &vao)
+	})
 
 	// Set projection
 	projectionUniform := gl.GetUniformLocation(program, gl.Str("projection\x00"))
@@ -68,6 +71,9 @@ func (s *MainState) Init(engine *engine.E) error {
 	gl.GenBuffers(1, &buffer)
 	gl.BindBuffer(gl.ARRAY_BUFFER, buffer)
 	s.vertexBuffer = buffer
+	engine.Defer(func(){
+		gl.DeleteBuffers(1, &buffer)
+	})
 
 	positionAttrib := uint32(gl.GetAttribLocation(program, gl.Str("position\x00")))
 	gl.EnableVertexAttribArray(positionAttrib)
@@ -77,14 +83,14 @@ func (s *MainState) Init(engine *engine.E) error {
 	space := bnticles.New()
 	for i := 0; i < PARTICLE_COUNT_DEFAULT; i++ {
 		particle := space.MkParticle(PARTICLE_MASS_DEFAULT)
-		particle.Position = randVect().Mul(0.5)
+		particle.Position = randVect().Mul(2)
 	}
 	s.space = space
 
 	return nil
 }
 
-func (s *MainState) Deinit() error {
+func (s *MainState) Deinit(_ *engine.E) error {
 	return nil
 }
 
@@ -93,11 +99,6 @@ const accuracy = 1
 func (s *MainState) Update(dt float64) error {
 	s.space.Step(dt / accuracy)
 	return nil
-}
-
-func unsafeEnslice(p unsafe.Pointer, size int, length int) unsafe.Pointer {
-	sliceHeader := reflect.SliceHeader{uintptr(p), size * length, size * length}
-	return unsafe.Pointer(&sliceHeader)
 }
 
 func (s *MainState) Render() error {
@@ -202,6 +203,11 @@ func glDebugCallback(
 		source, gltype, severity, message)
 }
 
+func unsafeEnslice(p unsafe.Pointer, size int, length int) unsafe.Pointer {
+	sliceHeader := reflect.SliceHeader{uintptr(p), size * length, size * length}
+	return unsafe.Pointer(&sliceHeader)
+}
+
 func kindString(kind uint32) string {
 	switch kind {
 	case gl.VERTEX_SHADER:
@@ -275,7 +281,7 @@ func newProgram(vertexSource, fragmentSource string) (uint32, error) {
 	return program, nil
 }
 
-func initGraphics() (uint32, error) {
+func initGraphics(engine *engine.E) (uint32, error) {
 	// Init Glow
 	if err := gl.Init(); err != nil {
 		return 0, err
@@ -287,11 +293,17 @@ func initGraphics() (uint32, error) {
 		return program, err
 	}
 	gl.UseProgram(program)
+	engine.Defer(func(){
+		gl.DeleteProgram(program)
+	})
 
 	// Enable debug output
 	if glfw3.ExtensionSupported("GL_ARB_debug_output") {
 		gl.Enable(gl.DEBUG_OUTPUT_SYNCHRONOUS_ARB)
 		gl.DebugMessageCallbackARB(gl.DebugProc(glDebugCallback), nil)
+		engine.Defer(func(){
+			gl.Disable(gl.DEBUG_OUTPUT_SYNCHRONOUS_ARB)
+		})
 	}
 
 	return program, nil
