@@ -33,8 +33,8 @@ type Spacer interface {
 }
 
 const (
-	PARTICLE_MASS_DEFAULT  = 100
-	PARTICLE_COUNT_DEFAULT = 512
+	PARTICLE_MASS_DEFAULT  = 128
+	PARTICLE_COUNT_DEFAULT = 4096
 )
 
 type MainState struct {
