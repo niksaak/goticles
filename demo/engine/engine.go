@@ -112,9 +112,6 @@ func (e *E) Shutdown() (err error) {
 		return NotInitializedError("shutdown")
 	}
 	e.window.SetShouldClose(true)
-	if err := e.state.Deinit(); err != nil {
-		return err
-	}
 	err = e.executeDefers()
 	glfw3.Terminate()
 	*e = E{}

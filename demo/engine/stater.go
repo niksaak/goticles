@@ -5,7 +5,6 @@ import "github.com/go-gl/glfw3"
 // State initializes on creation and deinitializes on destruction.
 type State interface {
 	Init(*E) error
-	Deinit(*E) error
 }
 
 // Updater state updates its data with fixed timestep when active.

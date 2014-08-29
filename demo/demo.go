@@ -87,10 +87,13 @@ func (s *MainState) Init(engine *engine.E) error {
 	}
 	s.space = space
 
+	// Deinit is not part of interface, but can be deferred manually:
+	engine.Defer(s.Deinit)
+
 	return nil
 }
 
-func (s *MainState) Deinit(_ *engine.E) error {
+func (s *MainState) Deinit() {
 	return nil
 }
 
