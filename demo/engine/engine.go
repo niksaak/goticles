@@ -6,16 +6,26 @@ import (
 	"time"
 )
 
-type Engine struct {
+// E structure contains data necessary for engine operation.
+type E struct {
 	window *glfw3.Window
 	state  State
+	defers []func()
 }
 
-func New() *Engine {
-	return new(Engine)
+// New returns pointer to uninitialized new engine.
+func New() *E {
+	return new(E)
 }
 
-func (e *Engine) Initialize(title string, params Params, state State) error {
+// Params struct contains engine initialization parameters.
+type Params struct {
+	Version [2]int // major, minor
+	Size    [2]int // width, height
+}
+
+// Initialize creates new window 
+func (e *E) Initialize(title string, params Params, state State) error {
 	if !glfw3.Init() {
 		return fmt.Errorf("unable to initialize glfw")
 	}
@@ -46,11 +56,13 @@ func (e *Engine) Initialize(title string, params Params, state State) error {
 	return nil
 }
 
-func (e *Engine) IsInitialized() bool {
+// IsInitialized returns true if engine is fully initialized.
+func (e *E) IsInitialized() bool {
 	return e.window != nil && e.state != nil
 }
 
-func (e *Engine) Run() error {
+// Run starts the main loop.
+func (e *E) Run() error {
 	if !e.IsInitialized() {
 		return fmt.Errorf("not initialized")
 	}
@@ -94,7 +106,8 @@ func (e *Engine) Run() error {
 	return nil
 }
 
-func (e *Engine) Shutdown() error {
+// Shutdown deinitializes all states and closes all windows.
+func (e *E) Shutdown() (err error) {
 	if !e.IsInitialized() {
 		return NotInitializedError("shutdown")
 	}
@@ -105,7 +118,7 @@ func (e *Engine) Shutdown() error {
 	return nil
 }
 
-func (e *Engine) OnKey(
+func (e *E) OnKey(
 	w *glfw3.Window,
 	key glfw3.Key,
 	scancode int,
@@ -124,7 +137,7 @@ func (e *Engine) OnKey(
 	}
 }
 
-func (e *Engine) OnFramebufferResize(w *glfw3.Window, width int, height int) {
+func (e *E) OnFramebufferResize(w *glfw3.Window, width int, height int) {
 	if state, ok := e.state.(Resizer); ok {
 		state.Resize(width, height)
 	}
@@ -142,11 +155,6 @@ func (e NotInitializedError) Error() string {
 		s += ": " + string(e)
 	}
 	return s
-}
-
-type Params struct {
-	Version [2]int // major, minor
-	Size    [2]int // width, height
 }
 
 type State interface {

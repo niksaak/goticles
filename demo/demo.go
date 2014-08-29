@@ -44,7 +44,7 @@ type MainState struct {
 	program      uint32
 }
 
-func (s *MainState) Init() error {
+func (s *MainState) Init(engine *engine.E) error {
 	println("initializing state")
 	// Initialize rendering
 	program, err := initGraphics()
