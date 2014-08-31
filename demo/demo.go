@@ -12,9 +12,8 @@ import (
 	"github.com/niksaak/goticles/vect"
 	"math/rand"
 	"os"
-	"reflect"
 	"runtime"
-	"strings"
+	"runtime/pprof"
 	"unsafe"
 )
 
@@ -23,7 +22,7 @@ func randFloat() float64 {
 }
 
 func randVect() vect.V {
-	return vect.V{randFloat(), randFloat()}
+	return vect.V{randFloat(), randFloat()}.Ulen().Mul(rand.Float64())
 }
 
 type Spacer interface {
@@ -33,8 +32,8 @@ type Spacer interface {
 }
 
 const (
-	PARTICLE_MASS_DEFAULT  = 128
-	PARTICLE_COUNT_DEFAULT = 4096
+	PARTICLE_MASS_DEFAULT  = 96
+	PARTICLE_COUNT_DEFAULT = 3072
 )
 
 type MainState struct {
@@ -44,21 +43,51 @@ type MainState struct {
 	program      uint32
 }
 
-func (s *MainState) Init(engine *engine.E) error {
+var projection = mgl32.Ident4()
+
+func (s *MainState) Init(eng *engine.E) error {
 	println("initializing state")
-	// Initialize rendering
-	program, err := initGraphics(engine)
+	// Init Glow
+	if err := gl.Init(); err != nil {
+		return err
+	}
+
+	// Enable debug output
+	if glfw3.ExtensionSupported("GL_ARB_debug_output") {
+		gl.Enable(gl.DEBUG_OUTPUT_SYNCHRONOUS_ARB)
+		gl.DebugMessageCallbackARB(gl.DebugProc(glDebugCallback), nil)
+	}
+
+	shaderProg := engine.NewShaderProgram()
+	if err := shaderProg.ReadShaderFile("vert.glsl", engine.VertexShader); err != nil {
+		return err
+	}
+	if err := shaderProg.ReadShaderFile("geom.glsl", engine.GeometryShader); err != nil {
+		return err
+	}
+	if err := shaderProg.ReadShaderFile("frag.glsl", engine.FragmentShader); err != nil {
+		return err
+	}
+	program, err := shaderProg.Link()
 	if err != nil {
 		return err
 	}
 	s.program = program
+	gl.UseProgram(program)
+
+	gl.Enable(gl.BLEND)
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+	//gl.Enable(gl.DITHER)
+	gl.Enable(gl.MULTISAMPLE)
+	gl.Enable(gl.POLYGON_SMOOTH)
+	gl.Enable(gl.PROGRAM_POINT_SIZE)
 
 	// Init VAO
 	var vao uint32
 	gl.GenVertexArrays(1, &vao)
 	gl.BindVertexArray(vao)
 	s.vertexArray = vao
-	engine.Defer(func(){
+	eng.Defer(func(){
 		gl.DeleteVertexArrays(1, &vao)
 	})
 
@@ -71,7 +100,7 @@ func (s *MainState) Init(engine *engine.E) error {
 	gl.GenBuffers(1, &buffer)
 	gl.BindBuffer(gl.ARRAY_BUFFER, buffer)
 	s.vertexBuffer = buffer
-	engine.Defer(func(){
+	eng.Defer(func(){
 		gl.DeleteBuffers(1, &buffer)
 	})
 
@@ -83,12 +112,13 @@ func (s *MainState) Init(engine *engine.E) error {
 	space := bnticles.New()
 	for i := 0; i < PARTICLE_COUNT_DEFAULT; i++ {
 		particle := space.MkParticle(PARTICLE_MASS_DEFAULT)
-		particle.Position = randVect().Mul(2)
+		particle.Position = randVect()
+		particle.Velocity = randVect().Div(4)
 	}
 	s.space = space
 
 	// Deinit is not part of interface, but can be deferred manually:
-	engine.Defer(s.Deinit)
+	eng.Defer(s.Deinit)
 
 	return nil
 }
@@ -96,10 +126,8 @@ func (s *MainState) Init(engine *engine.E) error {
 func (s *MainState) Deinit() {
 }
 
-const accuracy = 1
-
 func (s *MainState) Update(dt float64) error {
-	s.space.Step(dt / accuracy)
+	s.space.Step(dt)
 	return nil
 }
 
@@ -107,14 +135,12 @@ func (s *MainState) Render() error {
 	program := s.program
 	gl.UseProgram(program)
 
-	gl.Clear(gl.COLOR_BUFFER_BIT)
-
 	projectionUniform := gl.GetUniformLocation(program, gl.Str("projection\x00"))
 	gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
 
+	gl.Flush()
 	buffer := s.vertexBuffer
 	gl.BindBuffer(gl.ARRAY_BUFFER, buffer)
-	gl.InvalidateBufferData(buffer)
 	gl.BufferData(
 		gl.ARRAY_BUFFER,
 		int(PARTICLE_COUNT_DEFAULT*unsafe.Sizeof([2]float32{})),
@@ -126,6 +152,9 @@ func (s *MainState) Render() error {
 	}
 	data := (*[PARTICLE_COUNT_DEFAULT][2]float32)(dataPointer)
 
+	gl.ClearColor(0, 0, 0, 1)
+	gl.Clear(gl.COLOR_BUFFER_BIT)
+
 	for i := range data {
 		p := s.space.Particle(i)
 		if p == nil {
@@ -136,7 +165,7 @@ func (s *MainState) Render() error {
 	}
 	gl.UnmapBuffer(gl.ARRAY_BUFFER)
 
-	gl.DrawArrays(gl.POINTS, 0, PARTICLE_COUNT_DEFAULT*2)
+	gl.DrawArrays(gl.POINTS, 0, PARTICLE_COUNT_DEFAULT)
 
 	return nil
 }
@@ -166,31 +195,6 @@ func (s *MainState) Close() error {
 	return nil
 }
 
-var projection = mgl32.Ident4()
-var vertexSource = `
-#version 430
-
-uniform mat4 projection;
-
-in vec2 position;
-
-void main() {
-	gl_Position.xy = position;
-	gl_Position.z = 0;
-	gl_Position.w = 1.0;
-	gl_Position *= projection;
-}
-`
-var fragmentSource = `
-#version 430
-
-in vec4 color;
-
-void main() {
-	gl_FragColor = vec4(0.3, 0.9, 0.3, 1.0);
-}
-`
-
 func glDebugCallback(
 	source uint32,
 	gltype uint32,
@@ -205,113 +209,18 @@ func glDebugCallback(
 		source, gltype, severity, message)
 }
 
-func unsafeEnslice(p unsafe.Pointer, size int, length int) unsafe.Pointer {
-	sliceHeader := reflect.SliceHeader{uintptr(p), size * length, size * length}
-	return unsafe.Pointer(&sliceHeader)
-}
-
-func kindString(kind uint32) string {
-	switch kind {
-	case gl.VERTEX_SHADER:
-		return "vertex"
-	case gl.TESS_CONTROL_SHADER:
-		return "tesselation control"
-	case gl.TESS_EVALUATION_SHADER:
-		return "tesselation evaluation"
-	case gl.GEOMETRY_SHADER:
-		return "geometry"
-	case gl.FRAGMENT_SHADER:
-		return "fragment"
-	case gl.COMPUTE_SHADER:
-		return "compute"
-	default:
-		return "unknown"
-	}
-}
-
-func compileShader(source string, kind uint32) (uint32, error) {
-	shader := gl.CreateShader(kind)
-
-	csource := gl.Str(source)
-	gl.ShaderSource(shader, 1, &csource, nil)
-	gl.CompileShader(shader)
-
-	var status int32
-	gl.GetShaderiv(shader, gl.COMPILE_STATUS, &status)
-	if status == gl.FALSE {
-		var logLength int32
-		gl.GetShaderiv(shader, gl.INFO_LOG_LENGTH, &logLength)
-		log := strings.Repeat("\x00", int(logLength+1))
-		gl.GetShaderInfoLog(shader, logLength, nil, gl.Str(log))
-		return 0, fmt.Errorf("failed to compile %v shader:\n%s", kindString(kind), log)
-	}
-
-	return shader, nil
-}
-
-func newProgram(vertexSource, fragmentSource string) (uint32, error) {
-	vertexSource += "\x00"
-	fragmentSource += "\x00"
-
-	vertexShader, err := compileShader(vertexSource, gl.VERTEX_SHADER)
-	if err != nil {
-		return 0, err
-	}
-	defer gl.DeleteShader(vertexShader)
-	fragmentShader, err := compileShader(fragmentSource, gl.FRAGMENT_SHADER)
-	if err != nil {
-		return 0, err
-	}
-	defer gl.DeleteShader(fragmentShader)
-
-	program := gl.CreateProgram()
-
-	gl.AttachShader(program, vertexShader)
-	gl.AttachShader(program, fragmentShader)
-	gl.LinkProgram(program)
-
-	var status int32
-	gl.GetProgramiv(program, gl.LINK_STATUS, &status)
-	if status == gl.FALSE {
-		var logLength int32
-		gl.GetProgramiv(program, gl.INFO_LOG_LENGTH, &logLength)
-		log := strings.Repeat("\x00", int(logLength+1))
-		gl.GetProgramInfoLog(program, logLength, nil, gl.Str(log))
-		return 0, fmt.Errorf("failed to link program:\n%s", log)
-	}
-
-	return program, nil
-}
-
-func initGraphics(engine *engine.E) (uint32, error) {
-	// Init Glow
-	if err := gl.Init(); err != nil {
-		return 0, err
-	}
-
-	// Compile shaders
-	program, err := newProgram(vertexSource, fragmentSource)
-	if err != nil {
-		return program, err
-	}
-	gl.UseProgram(program)
-	engine.Defer(func(){
-		gl.DeleteProgram(program)
-	})
-
-	// Enable debug output
-	if glfw3.ExtensionSupported("GL_ARB_debug_output") {
-		gl.Enable(gl.DEBUG_OUTPUT_SYNCHRONOUS_ARB)
-		gl.DebugMessageCallbackARB(gl.DebugProc(glDebugCallback), nil)
-		engine.Defer(func(){
-			gl.Disable(gl.DEBUG_OUTPUT_SYNCHRONOUS_ARB)
-		})
-	}
-
-	return program, nil
-}
-
 func main() {
+	{ // Profiling
+		cpu, err := os.Create("cpu.prof")
+		if err != nil {
+			panic(err)
+		}
+		defer cpu.Close()
+		pprof.StartCPUProfile(cpu)
+		defer pprof.StopCPUProfile()
+	}
+
+
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	params := engine.Params{
