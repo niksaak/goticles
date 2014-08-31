@@ -27,9 +27,11 @@ _cgo_export.*
 
 _testmain.go
 
+# Executables
 *.exe
 *.test
 
-# Project-wise
-
 demo/demo
+
+# Profiling info
+*.prof
