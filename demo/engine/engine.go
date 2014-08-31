@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 	"github.com/go-gl/glfw3"
+	"github.com/go-gl/mathgl/mgl64"
 	"time"
 )
 
@@ -38,6 +39,7 @@ func (e *E) Initialize(title string, params Params, state State) error {
 	glfw3.WindowHint(glfw3.Resizable, glfw3.True)
 	glfw3.WindowHint(glfw3.ContextVersionMajor, params.Version[0])
 	glfw3.WindowHint(glfw3.ContextVersionMinor, params.Version[1])
+	glfw3.WindowHint(glfw3.OpenglProfile, glfw3.OpenglCoreProfile)
 	glfw3.WindowHint(glfw3.OpenglDebugContext, glfw3.True)
 
 	size := params.Size
@@ -76,8 +78,23 @@ func (e *E) Run() error {
 		state.Resize(width, height)
 	}
 
-	ticker := time.Tick(1 * time.Second / 60)
-	for _ = range ticker {
+	const dt = 1.0/60.0
+	for { // FIXME: lock graphics timestep
+		var _ = mgl64.Clamp
+		var _ = time.Now()
+
+		if state, ok := e.state.(Updater); ok {
+			if err := state.Update(dt); err != nil {
+				return err
+			}
+		}
+
+		if state, ok := e.state.(Renderer); ok {
+			if err := state.Render(); err != nil {
+				return err
+			}
+		}
+
 		glfw3.PollEvents()
 
 		if e.window.ShouldClose() {
@@ -87,17 +104,6 @@ func (e *E) Run() error {
 				}
 			}
 			return nil
-		}
-
-		if state, ok := e.state.(Updater); ok {
-			if err := state.Update(1.0 / 60); err != nil {
-				return err
-			}
-		}
-		if state, ok := e.state.(Renderer); ok {
-			if err := state.Render(); err != nil {
-				return err
-			}
 		}
 
 		e.window.SwapBuffers()
