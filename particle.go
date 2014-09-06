@@ -9,6 +9,7 @@ type P struct {
 	Id       int
 	Position vect.V
 	Velocity vect.V
+	Acceleration vect.V
 	Force    vect.V
 	Mass     float64
 }

@@ -6,9 +6,7 @@ import (
 	"github.com/go-gl/glow/gl-core/4.4/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/niksaak/goticles"
-	"github.com/niksaak/goticles/bnticles"
 	"github.com/niksaak/goticles/demo/engine"
-	//"github.com/niksaak/goticles/rk4"
 	"github.com/niksaak/goticles/vect"
 	"math/rand"
 	"os"
@@ -16,6 +14,16 @@ import (
 	"runtime/pprof"
 	"unsafe"
 )
+
+import (
+	"github.com/niksaak/goticles/rk4"
+	"github.com/niksaak/goticles/bnticles"
+	"github.com/niksaak/goticles/leapfrog"
+)
+
+var _ Spacer = rk4.New()
+var _ Spacer = bnticles.New()
+var _ Spacer = leapfrog.New()
 
 func randFloat() float64 {
 	return rand.Float64() - 0.5
@@ -32,7 +40,7 @@ type Spacer interface {
 }
 
 const (
-	PARTICLE_MASS_DEFAULT  = 96
+	PARTICLE_MASS_DEFAULT  = 1
 	PARTICLE_COUNT_DEFAULT = 3072
 )
 
@@ -109,11 +117,10 @@ func (s *MainState) Init(eng *engine.E) error {
 	gl.VertexAttribPointer(positionAttrib, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
 
 	// Initialize space
-	space := bnticles.New()
+	space := leapfrog.New()
 	for i := 0; i < PARTICLE_COUNT_DEFAULT; i++ {
 		particle := space.MkParticle(PARTICLE_MASS_DEFAULT)
-		particle.Position = randVect()
-		particle.Velocity = randVect().Div(4)
+		particle.Position = randVect().Div(2)
 	}
 	s.space = space
 
