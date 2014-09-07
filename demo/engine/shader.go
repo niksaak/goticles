@@ -16,6 +16,7 @@ const (
 	TessEvaluationShader            = gl.TESS_EVALUATION_SHADER
 	GeometryShader                  = gl.GEOMETRY_SHADER
 	FragmentShader                  = gl.FRAGMENT_SHADER
+	ComputeShader                   = gl.COMPUTE_SHADER
 )
 
 type ShaderProgram struct {
