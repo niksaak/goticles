@@ -12,6 +12,7 @@ import (
 
 const (
 	WORK_GROUP_LOCAL_SIZE = 256
+	TILED_SHADER = true
 )
 
 type Space struct {
@@ -123,7 +124,11 @@ func sliceMapParticlesBuffer(mode uint32, length int) ([]gpuParticle, error) {
 
 func loadShader() (shader uint32, err error) {
 	accelProgram := engine.NewShaderProgram()
-	err = accelProgram.ReadShaderFile("accelerator.comp.glsl", engine.ComputeShader)
+	if !TILED_SHADER {
+		err = accelProgram.ReadShaderFile("accelerator.comp.glsl", engine.ComputeShader)
+	} else {
+		err = accelProgram.ReadShaderFile("accelerator_tiled.comp.glsl", engine.ComputeShader)
+	}
 	if err != nil {
 		return 0, err
 	}
