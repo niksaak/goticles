@@ -32,6 +32,7 @@ _testmain.go
 *.test
 
 demo/demo
+gputicles/demo/demo
 
 # Profiling info
 *.prof
